@@ -53,26 +53,60 @@ To follow this guideline, you must have:
 ## Docker - Basic knowleged before we start
 
 If you want to learn of use Kubernetes, you must know how to work with Docker first. It's because Kubernetes will host your service/application as an Docker containers from Docker image.
+
 By that, we will need to understand how to Dockerize an application and understand to work/troubleshoot a Docker container first 
 
 ### What is Docker
 
-Docker is an open platform for developing, shipping, and running applications. Docker enables you to separate your applications from your infrastructure so you can deliver software quickly.
-With the feature or Docker, you can package your application with it's requires environments, this can be a few libraries or any filesystem of an installed operating system.
-Then we can deploy it to any servers without concerns in installing librarys or configurating server's system
+> " Docker is an open platform for developing, shipping, and running applications. Docker enables you to separate your applications from your infrastructure so you can deliver software quickly. With Docker, you can manage your infrastructure in the same ways you manage your applications. By taking advantage of Docker’s methodologies for shipping, testing, and deploying code quickly, you can significantly reduce the delay between writing code and running it in production.
+
+Basically, Docker is an open source platform that we can package (or we can say "Image" in docker) our application with its whole environment need, this can be a few libraries or any filesystem of an installed operating system. 
+
+To run your application with this image, we just need to deploy it to docker environment in the Serve, and it will be executed as Container
+Or we can transfer image(s) to a storage to store it for the future usage or backuping (we call it's "Registry" in Docker)
 
 There are three main Docker components we will forcus on this tutorials:
 
-Images :— A Docker based container image is something you package your application and its environment. It contains the filesystem that will be available to the application and other metadata, such as the path to the executable that should be executed when the image is run.
+**Images** :
+- Basically, a Docker image has everything needed to run a containerized application, including code, config files, environment variables, libraries and runtimes. 
+  To make an Docker image, we must have a Dockerfile which including a base image and a set of commands to copy application source code to the base image or installing needed libraries
 
-Registries :- A Docker Registry is a repository that stores your Docker images and facilitates easy sharing of those images between different users and computers. When you build your image, you can either run it on the computer you’ve built it on, or you can push (upload) the image to a registry and then pull (download) it on another computer and run it there. Certain registries are public, allowing anyone to pull images from it, while others are private, only accessible to certain people or machines.
+**Containers** :
+- We can understand the docker container is virtualized runtime environment of a Docker image, which means we start running our application under docker environment.
+  We can have multiple containers running on one hosting server and it's completely isolated from both host and all other conainers. 
+  However, we also can setup container's network to container or between containers to containers or expose ports to open the connection between the host
 
-Containers :- A Docker-based container is a regular Linux container created from a Docker-based container image. A running container is a process running on the host running Docker, but it’s completely isolated from both the host and all other processes running on it. The process is also resource-constrained, meaning it can only access and use the number of resources (CPU, RAM, and so on) that are allocated to it.
+
+**Registry** :
+- A Docker Registry is a place that stores your Docker images and facilitates easy sharing of those images between different users and computers.
+  When you build your image, you can either run it on the computer you’ve built it on, or you can push (upload) the image to a registry and then pull (download) it on another computer and run it there.
+  Certain registries are public, allowing anyone to pull images from it, while others are private, only accessible to certain people or machines.
 
 ![Docker-flow](./readme/docker-flow.png)
 
 ### Learning Resource
 
+I have create an python application to desmonstrate this guideline and I call it "[dummy-api](./dummy-api)".
+If you want to run it directly in your local to know how it's working, please check [dummy-api Readme]('./dummy-api/README.md')
+
+In the project, I have created a [Dockerfile][./dummy-api/Dockerfile] which contains steps to build an docker image
+
+Then we in the next step I will show how can we dockerize this application to prepare deploy it to Kubernetes env.
+Make sure your Docker server is up and running. Now we will create a Docker image in our local machine.
+
+1. Open terminal and go to folder [dummy-api](./dummy-api)
+
+1. Execute command below:
+    ```bash
+      docker build -t dummy-api:1 .
+    ```
+
+1. When it's finished, we can check created docker image with:
+    ```bash
+      docker images
+
+
+    ```
 
 ## Kubernetes
 
