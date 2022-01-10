@@ -1,5 +1,14 @@
 # Dummy-Api Usage
 
+<!-- vim-markdown-toc GFM -->
+
+* [Requirement](#requirement)
+* [Application](#application)
+* [Running the application](#running-the-application)
+* [Docker](#docker)
+
+<!-- vim-markdown-toc -->
+
 ## Requirement
 
 - Python3.x
@@ -10,8 +19,6 @@
 This application we have only two end point
 
 - "/": This will show up a page with simple detail of Hosting machine name, curren application verison and a Dummy quote
-
-    ![dummy-api-ui](../readme/dummy-api-ui.png)
 
 - "/ping": Will return "pong!" message, for healthcheck
 
@@ -43,3 +50,17 @@ Then we will see the response as this
 ```
 
 Then we can open this link in our browser http://localhost:105
+
+## Docker
+
+- Dockerrilze command
+  
+  ```bash
+    docker build -t dummy-api .
+  ```
+
+- Run the build image
+
+  ```bash
+      docker run -d --name dummy-container -p 105:105 dummy-api
+  ```
