@@ -830,9 +830,10 @@ dummy-api-5b599c48c6   1         1         1       149m     # The new update for
 
 - **Get replicaSet information**:
 ```bash
-$ kubectl describe rs/dummy-api-5b599c48c6
+$ kubectl describe rs/[REPLICASET NAME]
 
-# Sample response
+# Sample
+$ kubectl describe rs/dummy-api-5b599c48c6
 Name:           dummy-api-5b599c48c6
 Namespace:      default
 Selector:       app=demo,pod-template-hash=5b599c48c6
@@ -890,9 +891,10 @@ the name of Pod will be randomized with prefix is the Deployment name
 
 - **Inspect Pod Information**:
 ```bash
-$ kubectl describe pod/dummy-api-55b48f6c47-nfx8n
+$ kubectl describe pod/[POD NAME]
 
-# Sample response
+# Sample
+$ kubectl describe pod/dummy-api-55b48f6c47-nfx8n
 Name:         dummy-api-55b48f6c47-nfx8n
 Namespace:    default
 Priority:     0
@@ -946,9 +948,10 @@ Events:
 
 - **Get Log of container in Pod**:
 ```bash
-$ kubectl logs dummy-api-55b48f6c47-nfx8n
+$ kubectl logs [POD NAME]
 
-# Sample response
+# Sample
+$ kubectl logs dummy-api-55b48f6c47-nfx8n
  * Serving Flask app 'app' (lazy loading)
  * Environment: development
  * Debug mode: on
@@ -969,11 +972,17 @@ If we want to stream the logs realtime, you can add the flag `-f` in the command
 
 To copy file to container in pod
 ```bash
+$ kubectl cp [FILE TO COPY] [POD NAME]:[DESTINATION]
+
+# Sample
 $ kubectl cp test.txt dummy-api-55b48f6c47-nfx8n:/tmp/
 ```
 
 To download file from container in pod
 ```bash
+$ kubectl cp [POD NAME]:[FILE TO COPY] [DESTINATION]
+
+# Sample
 $ kubectl cp dummy-api-55b48f6c47-nfx8n:/tmp/test.txt .
 ```
 
@@ -992,7 +1001,6 @@ To connect to container in pod
 ```bash
 $ kubectl exec -it [POD NAME] -- sh -il
 
-
 # Sample Command
 $ kubectl exec -it dummy-api-55b48f6c47-dr24c -- sh -il
 ```
@@ -1003,9 +1011,10 @@ We can delete the pod, but because we have the `ReplicaSet` to control the numbe
 So when we delete the pod, it will delete the target pod but also create a new pod to maintain the number of pods defined in ReplicaSet
 
 ```bash
-$ kubectl delete pods/dummy-api-55b48f6c47-dr24c
+# kubectl delete pods/[POD NAME]
 
 # Sample response
+$ kubectl delete pods/dummy-api-55b48f6c47-dr24c
 pod "dummy-api-55b48f6c47-dr24c" deleted
 ```
 
@@ -1551,7 +1560,7 @@ We also can get the logs of the cronjob's job with the similar command
 
 - To delete Cronjob, we can use between:
 
-We can delete the configmap with template 
+We can delete the configmap with template
 ```bash
 $ kubectl delete -f ./kubernetes/cronjob/cronjob.yaml
 ```
