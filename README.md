@@ -37,15 +37,20 @@ If you want to learn fully about Kubernetes please read [Kubernetes documentatio
 * [Logical level](#logical-level)
   * [Preparation](#preparation-1)
   * [Deploy basic application (Deployment, replicaSet, and pod)](#deploy-basic-application-deployment-replicaset-and-pod)
-    * [What exactly happening in Kubernetes:](#what-exactly-happening-in-kubernetes)
-      * [Deployment](#deployment)
-      * [ReplicaSet](#replicaset)
-      * [Pod](#pod)
+    * [Deployment](#deployment)
+    * [ReplicaSet](#replicaset)
+    * [Pod](#pod)
   * [Expose application (Service)](#expose-application-service)
-  * [Set environment for Aplication on Kubernetes (Configmap/Secret)](#set-environment-for-aplication-on-kubernetes-configmapsecret)
-  * [Cronjob and job](#cronjob-and-job)
+    * [ClusterIp](#clusterip)
+    * [Nodeport](#nodeport)
+    * [Loadbalancer (Cloud)](#loadbalancer-cloud)
+  * [Set environment for Aplication on Kubernetes](#set-environment-for-aplication-on-kubernetes)
+    * [Option 1: Set environment directly to deployment](#option-1-set-environment-directly-to-deployment)
+    * [Option 2: Using Configmap](#option-2-using-configmap)
+  * [Cronjob and jobs](#cronjob-and-jobs)
+    * [Jobs](#jobs)
+    * [Cronjob](#cronjob)
   * [Control project's components in logical level (namespace)](#control-projects-components-in-logical-level-namespace)
-  * [Ingress](#ingress)
 
 <!-- vim-markdown-toc -->
 
@@ -431,7 +436,7 @@ At this point, I will assume we already have Docker desktop running on our local
 And also created a docker image for the `Dummy-api` application.
 
 Then we will begin deploying this application to Kubernetes environment, but first, we will have a deployment template to guide Kubernetes on how to deploy our application.
-In the folder [kubernetes/basic](./kubernetes/basic), I have a sample deployment template for us to use on this sample, [deployment.yaml](./kubernetes/basic/deployment.yaml)
+In the folder [kubernetes/deployments](./kubernetes/deployments), I have a sample deployment template for us to use on this sample, [deployment.yaml](./kubernetes/deployments/deployment.yaml)
 
 ```yaml
 apiVersion: apps/v1                      # Api version of Kubernetes
@@ -460,7 +465,7 @@ spec:                                    # Deployment content
 
 Then execute command to deploy this to Kubernetes cluster
 ```bash
-$ kubectl apply -f deployment.yaml
+$ kubectl apply -f kubernetes/deployments/deployment.yaml
 
 # Sample response
 deployment.apps/dummy-api created
@@ -479,7 +484,7 @@ dummy-api   1/1     1            1           10s
 
 That it, it's simple like that.
 
-#### What exactly happening in Kubernetes:
+**But what exactly happening in Kubernetes**:
 
 When you start loading your deployment template to deploy your application into Kubernetes.
 It's not simple as putting your application to any server in Kubernetes, this is the combining of 3 main components of Kubernetes,
@@ -487,7 +492,7 @@ Deployment, replicaSet and Pod(s).
 
 ![deployment-replicaSet-pod](./readme/deployment-replicaset-pod.png)
 
-##### Deployment
+#### Deployment
 
 At first, the "Deployment" resource will be created after triggering the deploy command.
 
@@ -596,7 +601,7 @@ pong!%
 
 We can scale up the number of running container(s) on Kubernetes to help avoid overload in the container.
 ```bash
-$ kubectl scale deployment/dummy-api --replicas=4
+$ kubectl scale deployment/dummy-api --replicas=2
 
 # Sample response
 deployment.apps/dummy-api scaled
@@ -608,7 +613,7 @@ $ kubectl get deployment
 
 # Sample response
 NAME        READY   UP-TO-DATE   AVAILABLE   AGE
-dummy-api   4/4     4            4           30m
+dummy-api   2/2     2            2           30m
 ```
 
 - **Redeploy the application with Deployment**:
@@ -622,7 +627,7 @@ When we want to redeploy the application with the new version, we just need to u
 
   1. Then we will change the deployment template for the new version of application.
 
-      For this sample, I have prepared another deployment template [kubernetes/basic/deployment-v2.yaml](./kubernetes/basic/deployment-v2.yaml)
+      For this sample, I have prepared another deployment template [kubernetes/deployments/deployment-v2.yaml](./kubernetes/deployments/deployment-v2.yaml)
       ```yaml
       apiVersion: apps/v1
       kind: Deployment
@@ -642,7 +647,7 @@ When we want to redeploy the application with the new version, we just need to u
           spec:
             containers:
             - name: demo-container
-              image: dummy-api:2              # Also update new docker image version
+              image: dummy-api:2              # Updated new docker image version
               imagePullPolicy: IfNotPresent
               ports:
               - containerPort: 105
@@ -786,7 +791,19 @@ Events:
 
 As we saw, the `Image` has swapped to `dummy-api:1` which is dedicated to the first deployment
 
-##### ReplicaSet
+- **Delete the deployment**:
+
+We can delete the deployment based on the template with command:
+```bash
+$ kubectl delete -f kubernetes/deployments/deployment.yaml
+```
+
+Or we can direct delete the deployment with it name
+```bash
+$ kubectl delete deployment/dummy-api
+```
+
+#### ReplicaSet
 
 The "Deployment" resource aims to focus on controlling the life cycle of the application and when a new deployment is executed, ReplicaSet will be created after the deployment
 
@@ -845,7 +862,7 @@ Events:           <none>
 >
 >    Since ReplicaSet will be created automatically in Deployment, the ReplicaSet will have the randomized name with the prefix is the name of Deployment
 
-##### Pod
+#### Pod
 
 A Pod is the smallest unit of deployment in Kubernetes, it will focus on managing container(s).
 Generally, we can have multiple containers in a single Pod, but in the recommendation, a Pod should have one container.
@@ -1004,18 +1021,544 @@ dummy-api-55b48f6c47-z6htv   1/1     Running   0          2s
 
 ### Expose application (Service)
 
+As mentioned in the Deployment session, the running Pod cannot access out side the cluster.
+The only way we can access it is under `kube-proxy` with `port-forward` but this way is only for development. 
 
-deployment is isolated....
+If we want to make it for production and serving the public connection, we will need to expose it through `Service` Component of Kubernetes.
 
-3 type of service
-- clusterip
-- nodeport 
-- loadbalancer (cloud)
+Right now, we have 3 types of Service in Kubernetes cluster
 
-### Set environment for Aplication on Kubernetes (Configmap/Secret)
+#### ClusterIp
 
-### Cronjob and job
+ClusterIP is the default type of service, which is used to expose a service for internal access only.
+This means the other applications can access (request) to this application's service but we can't access to this application externally
+
+![service-clusterip](./readme/service-clusterip.png)
+
+> Note: If you have delete the deployment, please check the [#deployment](#deployment) to deploy the dummy-api application again
+
+To deploy the ClusterIP service we will use the template [service-clusterip.yaml](./kubernetes/services/service-clusterip.yaml)
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: dummy                 # Name of the service
+  labels:
+    app: demo
+spec:                         # Service expose information
+  selector:
+    app: demo
+  ports:
+    - protocol: TCP
+      port: 105
+      targetPort: 105
+```
+
+Then we will deploy this service to kubernetes cluster
+```bash
+$ kubectl apply -f kubernetes/services/service-clusterip.yaml
+
+# Sample response
+service/dummy created
+```
+
+We can list the service
+```bash
+$ kubectl get service
+
+# Sample response
+NAME         TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE
+dummy        ClusterIP   10.97.23.218   <none>        105/TCP   9s
+```
+
+- **Test connect to Dummy-api through internal service (Optional)**
+
+  1. We will run another pod to test
+  ```bash
+  $ kubectl run --rm curl --image=radial/busyboxplus:curl -i --tty
+
+  # Sample response
+  If you don't see a command prompt, try pressing enter.
+  [ root@curl:/ ]$
+  ```
+
+  1. Then you can type this to command prompt to get Dummy-api Service information
+  ```bash
+  $ env | grep DUMMY
+
+  # Sample response
+  DUMMY_PORT=tcp://10.102.71.32:105
+  DUMMY_SERVICE_PORT=105
+  DUMMY_SERVICE_HOST=10.102.71.32
+  DUMMY_PORT_105_TCP=tcp://10.102.71.32:105
+  DUMMY_PORT_105_TCP_PROTO=tcp
+  DUMMY_PORT_105_TCP_PORT=105
+  DUMMY_PORT_105_TCP_ADDR=10.102.71.32
+  ```
+
+  1. We can start test the connection with command:
+  ```bash
+  $ curl http://$DUMMY_SERVICE_HOST:$DUMMY_SERVICE_PORT/ping
+
+  # Sample response
+  pong!%
+  ```
+
+This means your Dummy-api application is now visible with other Pods in the Kubernetes cluster.
+
+#### Nodeport
+
+NodePorts are open ports on every cluster node. Kubernetes will route traffic that comes into a NodePort to the service, even if the service is not running on that node.
+
+Therefore, each port can only dedicated to a service only, and the node port range of entire Kubernetes cluster is between `30000-32767`
+
+![service-nodeport](./readme/service-nodeport.png)
+
+> Note: If you have delete the deployment, please check the [#deployment](#deployment) to deploy the dummy-api application again
+
+To deploy the NodePort service we will use the template [service-nodeport.yaml](./kubernetes/services/service-nodeport.yaml)
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: dummy                 # Name of the service
+  labels:
+    app: demo
+spec:                         # Service expose information
+  type: NodePort              # Specify the service type
+  selector:
+    app: demo
+  ports:
+    - protocol: TCP
+      port: 105
+      targetPort: 105
+      nodePort: 30000         # Specify the node port
+```
+
+We can choose the port for this service type with `nodePort` in the above template, but it will be randomized in every deployment if we don't set
+
+Then we will deploy this service to kubernetes cluster
+```bash
+$ kubectl apply -f kubernetes/services/service-nodeport.yaml
+
+# Sample response
+service/dummy created
+```
+
+We can list the service
+```bash
+$ kubectl get service
+
+# Sample response
+NAME         TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE
+dummy        NodePort    10.101.187.44   <none>        105:30000/TCP   11s
+```
+
+- **Test connect to Dummy-api through NodePort service (Optional)**
+
+On your local machine, execute command below:
+```bash
+$ curl http://localhost:30000/ping
+
+# Sample response
+pong!%
+```
+
+or we can access to url `http://localhost:30000` to view the UI
+
+#### Loadbalancer (Cloud)
+
+This service type only works when we host the Kubernetes on Cloud providers which support external load balancers.
+
+With the loadbalancer service type, the Kubernetes will request your Cloud provider and generate a new loadbalancer Url with we can set it to our DNS for public access.
+
+![service-loadbalancer](./readme/service-loadbalancer.png)
+
+> Note: If you have delete the deployment, please check the [#deployment](#deployment) to deploy the dummy-api application again
+
+To Deploy the Loadbalancer service, we will use the template [service-loadbalancer.yaml](./kubernetes/services/service-loadbalance.yaml)
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: dummy
+  labels:
+    app: demo
+spec:
+  type: Loadbalancer
+  selector:
+    app: demo
+  ports:
+    - protocol: TCP
+      port: 105
+      targetPort: 105
+```
+
+Just need to deploy this service to Kubernetes cluster
+```bash
+$ kubectl apply -f kubernetes/services/service-loadbalance.yaml
+
+# Sample response
+service/dummy created
+```
+
+When we get the service we can have reponse like that
+```bash
+$ kubectl get service
+
+# Sample response
+NAME            TYPE           CLUSTER-IP       EXTERNAL-IP                                                             PORT(S)                             AGE
+dummy           LoadBalancer   10.20.240.237    a57b64b7xxxxxxxxxxxxxxxxxxxxxxxx-xxxxxxxx.us-west-2.elb.amazonaws.com   105:31469/TCP                       35s
+```
+
+Then we just need to set the loadbalancer url `a57b64b7xxxxxxxxxxxxxxxxxxxxxxxx-xxxxxxxx.us-west-2.elb.amazonaws.com` to DNS for user to access
+
+### Set environment for Aplication on Kubernetes
+
+There is two way we can set the environment variable to the container in development
+
+#### Option 1: Set environment directly to deployment
+
+In the deployment template, we can specify the component:
+```yaml
+...
+  env:
+    - name: VARIABLE_NAME
+      value: "Value of variable"
+```
+
+For this example, we have a deployment template [kubernetes/environment/deployment-env.yaml](./kubernetes/environment/deployment-env.yaml)
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dummy-api
+  labels:
+    app: demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: demo
+  template:
+    metadata:
+      labels:
+        app: demo
+    spec:
+      containers:
+        - name: demo-container
+          image: dummy-api:1
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 105
+          env:                               # Update the environment for this deployment
+            - name: GREETING_QUOTE
+              value: "Deployment with direct environment variable"
+```
+
+Then we will execute deployment command
+```bash
+$ kubectl apply -f kubernetes/environment/deployment-env.yaml
+
+# Sample response
+deployment.apps/dummy-api configured
+```
+
+We can inspect the new deployment information
+```bash
+$ kubectl describe deployment/dummy-api
+
+# Sample response
+Name:                   dummy-api
+Namespace:              default
+CreationTimestamp:      Mon, 10 Jan 2022 16:31:48 +0700
+Labels:                 app=demo
+Annotations:            deployment.kubernetes.io/revision: 5
+Selector:               app=demo
+Replicas:               1 desired | 1 updated | 1 total | 1 available | 0 unavailable
+StrategyType:           RollingUpdate
+MinReadySeconds:        0
+RollingUpdateStrategy:  25% max unavailable, 25% max surge
+Pod Template:
+  Labels:  app=demo
+  Containers:
+   demo-container:
+    Image:      dummy-api:1
+    Port:       105/TCP
+    Host Port:  0/TCP
+    Environment:
+      GREETING_QUOTE:  Deployment with direct environment variable
+    Mounts:            <none>
+  Volumes:             <none>
+Conditions:
+  Type           Status  Reason
+  ----           ------  ------
+  Available      True    MinimumReplicasAvailable
+  Progressing    True    NewReplicaSetAvailable
+OldReplicaSets:  <none>
+NewReplicaSet:   dummy-api-6c674cd646 (1/1 replicas created)
+Events:
+  Type    Reason             Age   From                   Message
+  ----    ------             ----  ----                   -------
+  Normal  ScalingReplicaSet  32s   deployment-controller  Scaled down replica set dummy-api-55b48f6c47 to 1
+  Normal  ScalingReplicaSet  32s   deployment-controller  Scaled up replica set dummy-api-6c674cd646 to 1
+  Normal  ScalingReplicaSet  31s   deployment-controller  Scaled down replica set dummy-api-55b48f6c47 to 0
+```
+
+As we can see the `Containers` has updated with the `Environment`.
+
+- If we connect to the container and execute command `env`, we can see our environment
+```bash
+$ kubectl exec -it dummy-api-6c674cd646-hdqpvv -- sh -il
+
+$ dummy-api-6c674cd646-hdqpv:/app# env | grep GREET
+GREETING_QUOTE=Deployment with direct environment variable
+```
+
+- We can also connect to the application via Url http://localhost:30000 and saw the changes of the quote
+  
+  We may need to deploy the Service to expose the Dummy-api 
+  ```bash
+  $ kubectl deploy -f kubernetes/services/service-nodeport.yaml
+  ```
+
+#### Option 2: Using Configmap
+
+Configmap is used to store non-confidential data in key-value pairs. Pods can consume ConfigMaps as environment variables, command-line arguments, or as configuration files in a volume.
+
+A ConfigMap allows you to decouple environment-specific configuration from your container images, so that your applications are easily portable.
+
+- **Deploy a configmap**:
+
+Similar with other resource, configmap also have a deploy template, for this example we will use resource in folder [./kubernetes/environment/configmap-env](./kubernetes/environment/configmap-env) and the sample configmap template
+```yaml
+apiVersion: v1
+kind: ConfigMap             # Resource type
+metadata:
+  name: dummy-config        # Configmap name
+data:                       # Variables
+  GREETING_QUOTE: "Load configmap as environment variable"
+```
+
+Deploy the configmap to Kubernetes cluster
+```bash
+$ kubectl apply -f kubernetes/environment/configmap-env/configmap.yaml
+
+# Sample response
+configmap/dummy-config created
+```
+
+Then we can get the configmap with:
+```bash
+$ kubectl get configmap
+
+# Sample response
+NAME           DATA   AGE
+dummy-config   1      23s
+```
+
+Get the configmap detail
+```bash
+$ kubectl describe configmap/dummy-config
+
+# Sample response
+Name:         dummy-config
+Namespace:    default
+Labels:       <none>
+Annotations:  <none>
+
+Data
+====
+GREETING_QUOTE:
+----
+Load configmap as environment variable
+
+BinaryData
+====
+
+Events:  <none>
+```
+
+Right now the Pod (container) in Deployment isn't use this configmap.
+To make it work we will need the component:
+```yaml
+...
+  envFrom:
+  - configMapRef:
+      name: dummy-config
+```
+
+For this example, we have a deployment template [deployment.yaml](./kubernetes/environment/configmap-env/deployment.yaml)
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dummy-api
+  labels:
+    app: demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: demo
+  template:
+    metadata:
+      labels:
+        app: demo
+    spec:
+      containers:
+      - name: demo-container
+        image: dummy-api:1
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 105
+        envFrom:                           # Here is the place to use this
+        - configMapRef:
+            name: dummy-config             # Must match the Configmap name
+```
+
+Apply this Deployment template to Kubernetes
+```bash
+$ kubectl apply -f ./kubernetes/environment/configmap-env/deployment.yaml
+```
+
+Then we can check the environment of the created Pod or access url http://localhost:30000 to see the quote changed
+
+- **Clean up**:
+
+We can delete the configmap with template 
+```bash
+$ kubectl delete -f ./kubernetes/environment/configmap-env/configmap.yaml
+```
+
+Or directly in command
+```bash
+$ kubectl delete configmap/dummy-api
+```
+
+### Cronjob and jobs
+
+Most of the time, you are using Kubernetes as a platform to run "long" processes where their purpose is to serve responses for a given incoming request.
+But Kubernetes also lets you run processes whose purpose is to execute some logic (i.e. update database, batch processing, etc.)
+
+- Jobs are tasks that execute some logic once, each job will create a dedicated Pod to execute task(s) and everything will be destroyed after task(s) finished
+- CronJobs is the controller of Jobs that a single job is repeated following a Cron pattern.
+
+#### Jobs
+
+For this sample, we will work on folder [kubernetes/cronjob](./kubernetes/cronjob)
+A Job will have the deployment template [job.yaml](./kubernetes/cronjob/job.yaml)
+```yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: job-               # The name will dynamic with prefix "job-"
+spec:
+  template:
+    spec:                          # Pod information
+      containers:
+      - name: hello
+        image: busybox
+        imagePullPolicy: IfNotPresent
+        command:                   # Command or task to execute
+        - /bin/sh
+        - -c
+        - date; echo Hello from the Kubernetes cluster
+      restartPolicy: Never
+  backoffLimit: 4
+```
+
+Apply this template to Kubernetes
+```bash
+$ kubectl create -f ./kubernetes/cronjob/job.yaml
+
+# Sample response
+job.batch/job-m7x5h created
+```
+
+To view the job
+```bash
+$ kubectl get jobs
+
+# Sample response
+NAME        COMPLETIONS   DURATION   AGE
+job-m7x5h   0/1           3s         3s
+```
+
+To get the job logs
+```bash
+$ kubectl logs job/[JOB NAME]
+
+# Sample
+$ kubectl logs job/job-m7x5h
+Tue Jan 11 12:28:26 UTC 2022
+Hello from the Kubernetes cluster
+```
+
+#### Cronjob
+
+For this sample, we will work on folder [kubernetes/cronjob](./kubernetes/cronjob)
+A Cronjob will have the deployment template [cronjob.yaml](./kubernetes/cronjob/cronjob.yaml)
+```yaml
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: cronjob-hello           # Name of the cronjob
+spec:
+  schedule: "*/1 * * * *"       # Cron execute time | from this one is every minute
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: hello
+            image: busybox
+            imagePullPolicy: IfNotPresent
+            command:
+            - /bin/sh
+            - -c
+            - date; echo Hello from the Kubernetes cluster
+          restartPolicy: OnFailure
+```
+
+Apply this template to Kubernetes
+```bash
+$ kubectl create -f ./kubernetes/cronjob/cronjob.yaml
+
+# Sample response
+cronjob.batch/cronjob-hello created
+```
+
+To view the cronjob
+```bash
+$ kubectl get cronjobs
+
+# Sample response
+NAME            SCHEDULE      SUSPEND   ACTIVE   LAST SCHEDULE   AGE
+cronjob-hello   */1 * * * *   False     0        <none>          45s
+```
+
+We can get the job created by this cronjob
+```bash
+$ kubectl get jobs
+
+# Sample response
+NAME                       COMPLETIONS   DURATION   AGE
+cronjob-hello-1641904500   1/1           1s         56s
+```
+
+We also can get the logs of the cronjob's job with the similar command
+
+- To delete Cronjob, we can use between:
+
+We can delete the configmap with template 
+```bash
+$ kubectl delete -f ./kubernetes/cronjob/cronjob.yaml
+```
+
+Or directly in command
+```bash
+$ kubectl delete cronjobs/cronjob-hello
+```
 
 ### Control project's components in logical level (namespace)
-
-### Ingress
