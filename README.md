@@ -1,25 +1,26 @@
-# Kubernetes usage basic learning
+# Kubernetes basic usage learning
 
 ## Motivation
 
 I saw many people who want to learn with Kubernetes but they don't have much time for reading a bunch of definitions to understand how it works.
+
 Or just because many tutorials focus too much on explaining all the definitions of Kubernetes and examples aren't focused on what they exactly want, deploy a simple application from End to End
 
 Therefore, I made this small project with the aiming to support those, who want to learn k8s but don't have much time, to have the basic mindset of how Kubernetes works and how to work with it.
+
 In this guideline, we will cover basic knowledge of K8s with step by step examples and I hope this can help other beginners
 
-- We won't go depth into Docker in this guideline, but some basic knowledge in Docker and dockerize will be required. You can go to [Docker get started](https://docs.docker.com/get-started/) for a quick review about docker before we can move on
-- I will try to avoid as much definition as I can in this tutorials, and I will focus more on practical examples with commands and explainations at that state, so if you need to know the definition and stuff, please the link **Kubernetes documentation** above
 
 If you want to learn fully about Kubernetes please read [Kubernetes documentation](https://kubernetes.io/docs/tutorials/)
 
-> **Importants**:
->
->   When you go through this guideline, you may see many explanations that may not correct 100% with the definitions on the official Documentation, since the target of this project is helping people have the general/basic knowledge on K8s.
->   Therefore, I made this as simple as I can, and some of them are the simple conclusion about my experience in Kubernetes.
->
->   Please let me know if any part of this guideline have incorrect, all of contributions are appreciated to make this guideline better
+**! Importants**:
 
+- We won't go depth into Docker in this guideline, but some basic knowledge in Docker and dockerize will be required. You can go to [Docker get started](https://docs.docker.com/get-started/) for a quick review about docker before we can move on
+
+- When you go through this guideline, you may see many explanations that may not correct 100% with the definitions on the official Documentation, since the target of this project is helping people have the general/basic knowledge on K8s.
+  Therefore, I made this as simple as I can, and some of them are the simple conclusion about my experience in Kubernetes.
+
+Please let me know if any part of this guideline have incorrect, all of contributions are appreciated to make this guideline better
 
 <!-- vim-markdown-toc GFM -->
 
@@ -50,7 +51,6 @@ If you want to learn fully about Kubernetes please read [Kubernetes documentatio
   * [Cronjob and jobs](#cronjob-and-jobs)
     * [Jobs](#jobs)
     * [Cronjob](#cronjob)
-  * [Control project's components in logical level (namespace)](#control-projects-components-in-logical-level-namespace)
 
 <!-- vim-markdown-toc -->
 
@@ -1569,5 +1569,3 @@ Or directly in command
 ```bash
 $ kubectl delete cronjobs/cronjob-hello
 ```
-
-### Control project's components in logical level (namespace)
