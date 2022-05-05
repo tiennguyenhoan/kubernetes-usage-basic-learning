@@ -65,7 +65,6 @@ Please let me know if any part of this guideline have incorrect, all of contribu
   * [Control project's components in logical level (namespace)](#control-projects-components-in-logical-level-namespace)
     * [Working with namespace](#working-with-namespace)
     * [Scenarios 1: Deploy with different namespace](#scenarios-1-deploy-with-different-namespace)
-    * [Scenarios 2: Pods communicate between namespace](#scenarios-2-pods-communicate-between-namespace)
 
 <!-- vim-markdown-toc -->
 
@@ -1804,5 +1803,5 @@ $ kubectl apply -f kubernetes/namespace/deployment.yaml
 
 Then we can get the deployment in the `dev` namespace
 
-#### Scenarios 2: Pods communicate between namespace
+<!-- #### Scenarios 2: Pods communicate between namespace inside K8s cluster -->
 <!--  curl http://<service-name>.<namespace>-->

@@ -6,6 +6,8 @@ RUN pip install --no-cache-dir Flask
 
 # Create working folder
 RUN mkdir /app  
+
+# Set working dir for the docker container
 WORKDIR /app
 
 # Copy source code to working folder
