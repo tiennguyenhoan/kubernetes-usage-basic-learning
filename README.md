@@ -151,7 +151,7 @@ To follow this guideline, you must have:
 
 I have created a python application to demonstrate this guideline and I call it [dummy-api](./dummy-api).
 
-If you want to run it directly in your local to know how it's working, please check [dummy-api Readme]('./dummy-api')
+If you want to run it directly in your local to know how it's working, please check [dummy-api Readme](./dummy-api/README.md)
 
 In the project, I have created a [Dockerfile](./dummy-api/Dockerfile) which contains steps to build a docker image
 
